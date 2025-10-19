@@ -1,0 +1,518 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+.order{
+    background-color: #f1c40f;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background 0.3s ease;
+}
+
+/* Navigation Bar */
+.navbar {
+    background: #2c3e50;
+    color: #fff;
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-links a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: #f1c40f;
+}
+
+/* Hero Section */
+.hero {
+    background: url('https://via.placeholder.com/1920x600?text=Hero+Image') no-repeat center center/cover;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background-image: url(images/pexels-novkov-visuals-745725-34307857.jpg);
+    background-size: cover;
+    background-position: center;
+
+    
+    
+   
+}
+
+.hero-content {
+    background: transparent;
+    padding: 2rem;
+    border-radius: 10px;
+     backdrop-filter: blur(10px);
+    border: 1px solid transparent;
+
+    
+}
+
+.hero h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  
+}
+
+.hero p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    
+}
+.hh{
+    overlay: black(90%);
+    color: rgb(255, 253, 208, 1);
+
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.8rem 2rem;
+    background: #f1c40f;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.btn:hover {
+    transform: scale(1.1);
+    background: #e67e22;
+}
+
+/* Services Section */
+/* Services Section Styles (add if not present) */
+.services {
+    padding: 60px 20px;
+    text-align: center;
+    background-color: #F5CA7B; /* Light background for contrast */
+}
+
+.services h2 {
+    font-size: 2.5em;
+    margin-bottom: 40px;
+    color: #333;
+}
+
+.services-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Service Card Styles - Ensures image at top */
+.service-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Ensures image doesn't overflow the card */
+    width: 300px;
+    transition: transform 0.3s ease; /* Hover effect for engagement */
+}
+
+.service-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Image at the Upper Part (Top) of the Card */
+.service-card img {
+    width: 100%; /* Full width of the card */
+    height: 200px; /* Fixed height for consistent card size */
+    object-fit: cover; /* Covers the area without distortion */
+    object-position: top; /* Prioritizes the upper part of the image (e.g., faces/food) */
+    display: block; /* Removes any inline spacing */
+}
+
+/* Text Content Below Image */
+.service-card h3 {
+    padding: 20px 20px 10px;
+    margin: 0;
+    font-size: 1.5em;
+    color: #333;
+    text-align: center;
+}
+
+.service-card p {
+    padding: 0 20px 20px;
+    margin: 0;
+    color: #666;
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* Menu Section */
+.menu {
+    padding: 4rem 2rem;
+    text-align: center;
+     background: linear-gradient(180deg, #fbf9f5 0%, #f4efe6 100%);
+}
+
+.menu h2 {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+}
+
+.menu-container {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.menu-item {
+    width: 200px;
+    text-align: center;
+}
+
+.menu-item img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 50%;
+    transition: box-shadow 0.3s ease;
+}
+
+.menu-item:hover img {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    transition:  background-color 0.5s ease-in-out, width 0.5s ease-in-out;
+    transform: translateY(-50px);
+    
+    
+}
+
+.menu-item h3 { 
+    font-size: 1.3rem;
+    margin: 1rem 0;
+}
+
+/* Price styling */
+.price-tag {
+   text-align: center;
+   margin-top: 30px;
+}
+.price-tag h4{
+    color: #333;
+}
+.price-tag::before {
+    content: "";
+    display: block;
+    width: 60px;
+    height: 4px;
+    background: #f1c40f;
+    margin: 0.5rem auto 1rem;
+    border-radius: 2px;
+}
+.price-tag::after{
+    content: "";
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: #f1c40f;
+    margin: 0.5rem auto 1rem;
+    border-radius: 2px;
+}
+.price-tag:hover{
+    transform: scale(1.1);
+    color: #e67e22;
+
+}
+
+
+/* Review Section - classic & unique styling */
+.client{
+    text-align: center;
+    margin-bottom: 2rem;
+    font-family: 'Georgia', serif;
+    color: #4b463f;
+}
+#reviews {
+    padding: 5rem 2rem;
+    background: linear-gradient(180deg, #fbf9f5 0%, #f4efe6 100%);
+    font-family: Georgia, 'Times New Roman', serif;
+    color: #2b2722;
+    border-top: 1px solid #e9dfce;
+}
+
+#reviews h2 {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #2c2620;
+    font-weight: 700;
+}
+
+/* Inner reviews container (the duplicated .reviews div in HTML) */
+#reviews .reviews {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+/* Individual review card */
+.review-card {
+    background: #ffffff;
+    width: 320px;
+    padding: 1.8rem 1.6rem;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(44, 38, 29, 0.08);
+    border-left: 6px solid #d4b16a; /* subtle gold accent */
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.review-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 18px 45px rgba(44, 38, 29, 0.12);
+}
+
+/* Quote text */
+.review-card p {
+    font-style: italic;
+    margin: 0 0 1rem 0;
+    color: #4b463f;
+    line-height: 1.6;
+    font-size: 1rem;
+    padding-left: 1.4rem;
+    position: relative;
+}
+
+/* Decorative opening quote */
+.review-card p::before {
+    content: "“";
+    font-size: 3.2rem;
+    position: absolute;
+    left: -0.2rem;
+    top: -0.35rem;
+    color: rgba(212, 177, 106, 0.18);
+    font-family: Georgia, serif;
+    line-height: 1;
+}
+
+/* Author / attribution */
+.review-card h4 {
+    margin: 0;
+    text-align: right;
+    font-weight: 700;
+    color: #2c2620;
+    font-size: 0.95rem;
+}
+
+/* Subtle radial accent */
+.review-card::after {
+    content: "";
+    position: absolute;
+    right: -40px;
+    top: -40px;
+    width: 120px;
+    height: 120px;
+    background: radial-gradient(circle at 30% 30%, rgba(212, 177, 106, 0.08), transparent 40%);
+    transform: rotate(15deg);
+    pointer-events: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #reviews {
+        padding: 3rem 1rem;
+    }
+
+    #reviews h2 {
+        font-size: 1.8rem;
+    }
+
+    #reviews .reviews {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .review-card {
+        width: 90%;
+        max-width: 420px;
+    }
+}
+
+/* Classic / resized Social Media section */
+.social-media {
+    padding: 3rem 1rem;
+    background: linear-gradient(180deg, #fbf9f5 0%, #f4efe6 100%);  
+    color: #2b2722;
+    text-align: center;
+    font-family: Georgia, "Times New Roman", serif;
+    border-top: 1px solid rgba(44,38,29,0.06);
+}
+
+.social-media h2 {
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: #2c2620;
+}
+
+/* Icon row */
+.social-icons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* circular icon buttons with classic look */
+.social-icons a {
+    display: inline-flex;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #ffffff;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(44,38,29,0.08);
+    border: 1px solid rgba(44,38,29,0.06);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    text-decoration: none;
+}
+
+/* icon images: slightly muted until hover to be classic/subtle */
+.social-icons a img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    filter: grayscale(100%) contrast(0.9) brightness(0.95);
+}
+
+/* hover / focus styles */
+.social-icons a:hover,
+.social-icons a:focus {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 44px rgba(44,38,29,0.12);
+    outline: none;
+}
+.social-icons a:focus-visible {
+    box-shadow: 0 0 0 6px rgba(241,196,15,0.10);
+}
+
+/* caption under icons for accessibility (optional, keeps classic look) */
+.social-media .caption {
+    margin-top: 0.8rem;
+    color: #6a5f56;
+    font-size: 0.95rem;
+}
+
+/* responsive sizing */
+@media (max-width: 480px) {
+    .social-icons a { width: 52px; height: 52px; }
+    .social-icons a img { width: 28px; height: 28px; }
+    .social-media { padding: 2rem 0.75rem; }
+}
+
+/* Contact Section */
+.contact {
+    padding: 4rem 2rem;
+    background: #f9f9f9;
+    text-align: center;
+}
+
+.contact h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.contact p {
+    margin-bottom: 2rem;
+}
+
+.contact form {
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.contact input, .contact textarea {
+    padding: 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+.contact textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.contact button {
+    cursor: pointer;
+}
+
+/* Footer */
+footer {
+    background: #2c3e50;
+    color: #fff;
+    text-align: center;
+    padding: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .hero p {
+        font-size: 1rem;
+    }
+
+    .services-container, .menu-container {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
