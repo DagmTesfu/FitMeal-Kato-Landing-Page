@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City Chaos - Open World Browser Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Black', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: #2a2a3e;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        /* UI Overlay */
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            color: white;
+            font-size: 14px;
+        }
+        
+        #stats {
+
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #00ff88;
+        }
+        
+        .stat {
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .stat-label {
+            color: #00ff88;
+            margin-right: 10px;
+            min-width: 80px;
+        }
+        
+        .bar {
+            width: 100px;
+            height: 15px;
+            background: #333;
+            border: 1px solid #00ff88;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00cc66);
+            transition: width 0.3s;
+        }
+        
+        .health-fill { background: linear-gradient(90deg, #ff3366, #cc0044); }
+        .wanted-fill { background: linear-gradient(90deg, #ffaa00, #ff6600); }
+        
+        #minimap {
+
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #00ff88;
+            border-radius: 5px;
+        }
+        
+        #mission {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #ffaa00;
+            max-width: 250px;
+        }
+        
+        .mission-title {
+            color: #ffaa00;
+            font-size: 16px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        
+        .mission-desc {
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        /* Screens */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: all;
+            z-index: 100;
+        }
+        
+        .screen h1 {
+            font-size: 48px;
+            color: #00ff88;
+            text-shadow: 0 0 20px #00ff88;
+            margin-bottom: 20px;
+        }
+        
+        .screen p {
+            font-size: 18px;
+            margin: 10px 0;
+            color: #fff;
+        }
+        
+        .btn {
+            margin: 10px;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            pointer-events: all;
+            text-transform: uppercase;
+        }
+        
+        .btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px #00ff88;
+        }
+
+        
+        .controls {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="minimap"></canvas>
+        
+        <div id="ui">
+            <div id="stats">
+                <div class="stat">
+                    <span class="stat-label">HEALTH</span>
+                    <div class="bar">
+                        <div class="bar-fill health-fill" id="healthBar" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">MONEY</span>
+                    <span id="money">$0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">WANTED</span>
+                    <div class="bar">
+                        <div class="bar-fill wanted-fill" id="wantedBar" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <div class="stat">
+                    <span class="stat-label">VEHICLE</span>
+                    <span id="vehicle">On Foot</span>
+                </div>
+            </div>
+            
+            <div id="mission" class="hidden">
+                <div class="mission-title" id="missionTitle">Mission</div>
+                <div class="mission-desc" id="missionDesc">Description</div>
+                <div class="mission-desc" id="missionProgress">Progress</div>
+            </div>
+        </div>
+        
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen">
+            <h1>CITY CHAOS</h1>
+            <p>An Open World Adventure</p>
+            <button class="btn" onclick="game.start()">START GAME</button>
+            <div class="controls">
+                <p>WASD / Arrow Keys - Move</p>
+                <p>E - Enter/Exit Vehicle</p>
+                <p>F - Start Mission (at markers)</p>
+                <p>P - Pause</p>
+            </div>
+        </div>
+        
+        <!-- Pause Screen -->
+        <div id="pauseScreen" class="screen hidden">
+            <h1>PAUSED</h1>
+            <button class="btn" onclick="game.resume()">RESUME</button>
+
+            <button class="btn" onclick="game.restart()">RESTART</button>
+        </div>
+        
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="screen hidden">
+            <h1>WASTED</h1>
+            <p id="gameOverMessage">You have been arrested!</p>
+            <button class="btn" onclick="game.restart()">TRY AGAIN</button>
+        </div>
+        
+        <!-- Mission Complete Screen -->
+        <div id="missionCompleteScreen" class="screen hidden">
+            <h1>MISSION PASSED</h1>
+            <p id="rewardMessage">+$500</p>
+            <button class="btn" onclick="game.continuePlaying()">CONTINUE</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== GAME CONFIGURATION =====
+        const CONFIG = {
+            canvas: { width: 800, height: 600 },
+            player: { speed: 2, carSpeed: 4, size: 16 },
+            npc: { carCount: 8, pedestrianCount: 15 },
+            police: { spawnDelay: 3000, speed: 2.5 },
+            world: { width: 2400, height: 1800 }
+        };
+
+        // ===== GAME STATE =====
+        const game = {
+            canvas: null,
+
+            ctx: null,
+            running: false,
+            paused: false,
+            keys: {},
+            camera: { x: 0, y: 0 },
+            
+            player: {
+                x: 400, y: 400,
+                vx: 0, vy: 0,
+                angle: 0,
+                health: 100,
+                money: 0,
+                wantedLevel: 0,
+                inVehicle: false,
+                vehicle: null
+            },
+            
+            entities: {
+                buildings: [],
+                roads: [],
+                vehicles: [],
+                pedestrians: [],
+                police: [],
+                missionMarkers: []
+            },
+            
+            mission: {
+                active: false,
+                type: null,
+                target: null,
+                timeLimit: 0,
+                reward: 0
+            },
+            
+            start() {
+                document.getElementById('startScreen').classList.add('hidden');
+                this.init();
+
+                this.running = true;
+                this.gameLoop();
+            },
+            
+            pause() {
+                this.paused = true;
+                document.getElementById('pauseScreen').classList.remove('hidden');
+            },
+            
+            resume() {
+                this.paused = false;
+                document.getElementById('pauseScreen').classList.add('hidden');
+            },
+            
+            restart() {
+                document.getElementById('gameOverScreen').classList.add('hidden');
+                document.getElementById('pauseScreen').classList.add('hidden');
+                this.player = {
+                    x: 400, y: 400, vx: 0, vy: 0, angle: 0,
+                    health: 100, money: 0, wantedLevel: 0,
+                    inVehicle: false, vehicle: null
+                };
+                this.mission = { active: false, type: null, target: null, timeLimit: 0, reward: 0 };
+                this.entities.police = [];
+                this.paused = false;
+                this.running = true;
+                this.init();
+                this.gameLoop();
+            },
+            
+            continuePlaying() {
+                document.getElementById('missionCompleteScreen').classList.add('hidden');
+
+                this.paused = false;
+            },
+            
+            gameOver(message) {
+                this.running = false;
+                document.getElementById('gameOverMessage').textContent = message;
+                document.getElementById('gameOverScreen').classList.remove('hidden');
+                this.playSound('gameover');
+            },
+            
+            init() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.setupEventListeners();
+                this.generateWorld();
+                this.spawnNPCs();
+                this.spawnMissionMarkers();
+                this.updateUI();
+            },
+            
+            setupEventListeners() {
+                document.addEventListener('keydown', (e) => {
+                    this.keys[e.key.toLowerCase()] = true;
+                    
+                    if (e.key.toLowerCase() === 'p' && this.running) {
+                        if (this.paused) this.resume();
+                        else this.pause();
+                    }
+                    
+                    if (e.key.toLowerCase() === 'e' && this.running && !this.paused) {
+                        this.toggleVehicle();
+                    }
+
+                    
+                    if (e.key.toLowerCase() === 'f' && this.running && !this.paused) {
+                        this.checkMissionStart();
+                    }
+                });
+                
+                document.addEventListener('keyup', (e) => {
+                    this.keys[e.key.toLowerCase()] = false;
+                });
+            },
+            
+            generateWorld() {
+                // Create grid-based city layout
+                const blockSize = 200;
+                const roadWidth = 40;
+                
+                // Generate roads (horizontal and vertical)
+                for (let x = 0; x < CONFIG.world.width; x += blockSize) {
+                    this.entities.roads.push({
+                        x: x, y: 0,
+                        width: roadWidth,
+                        height: CONFIG.world.height,
+                        direction: 'vertical'
+                    });
+                }
+                
+                for (let y = 0; y < CONFIG.world.height; y += blockSize) {
+                    this.entities.roads.push({
+                        x: 0, y: y,
+                        width: CONFIG.world.width,
+                        height: roadWidth,
+
+                        direction: 'horizontal'
+                    });
+                }
+                
+                // Generate buildings in blocks
+                for (let bx = 0; bx < CONFIG.world.width / blockSize; bx++) {
+                    for (let by = 0; by < CONFIG.world.height / blockSize; by++) {
+                        const baseX = bx * blockSize + roadWidth + 10;
+                        const baseY = by * blockSize + roadWidth + 10;
+                        const blockWidth = blockSize - roadWidth - 20;
+                        const blockHeight = blockSize - roadWidth - 20;
+                        
+                        // Add 2-4 buildings per block
+                        const buildingCount = 2 + Math.floor(Math.random() * 3);
+                        for (let i = 0; i < buildingCount; i++) {
+                            const w = 40 + Math.random() * 60;
+                            const h = 40 + Math.random() * 60;
+                            const x = baseX + Math.random() * (blockWidth - w);
+                            const y = baseY + Math.random() * (blockHeight - h);
+                            
+                            this.entities.buildings.push({
+                                x, y, width: w, height: h,
+                                color: this.randomBuildingColor()
+                            });
+                        }
+                    }
+                }
+            },
+
+            
+            randomBuildingColor() {
+                const colors = ['#3d5a80', '#98c1d9', '#ee6c4d', '#293241', '#5c677d'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            },
+            
+            spawnNPCs() {
+                // Spawn NPC vehicles
+                for (let i = 0; i < CONFIG.npc.carCount; i++) {
+                    const car = {
+                        x: Math.random() * CONFIG.world.width,
+                        y: Math.random() * CONFIG.world.height,
+                        vx: (Math.random() - 0.5) * 2,
+                        vy: (Math.random() - 0.5) * 2,
+                        angle: Math.random() * Math.PI * 2,
+                        color: this.randomCarColor(),
+                        width: 30,
+                        height: 20
+                    };
+                    this.entities.vehicles.push(car);
+                }
+                
+                // Spawn pedestrians
+                for (let i = 0; i < CONFIG.npc.pedestrianCount; i++) {
+                    this.entities.pedestrians.push({
+                        x: Math.random() * CONFIG.world.width,
+                        y: Math.random() * CONFIG.world.height,
+                        vx: (Math.random() - 0.5) * 0.5,
+
+                        vy: (Math.random() - 0.5) * 0.5,
+                        color: this.randomPedestrianColor()
+                    });
+                }
+            },
+            
+            randomCarColor() {
+                const colors = ['#ff3366', '#3366ff', '#ffcc00', '#00ff88', '#ff6600', '#cc33ff'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            },
+            
+            randomPedestrianColor() {
+                const colors = ['#ff9999', '#99ccff', '#ffff99', '#99ff99', '#ffcc99'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            },
+            
+            spawnMissionMarkers() {
+                // Create mission markers at specific locations
+                const markers = [
+                    { x: 800, y: 600, type: 'delivery', reward: 500 },
+                    { x: 1600, y: 400, type: 'collect', reward: 300 },
+                    { x: 1200, y: 1200, type: 'race', reward: 700 }
+                ];
+                
+                markers.forEach(m => {
+                    this.entities.missionMarkers.push({
+                        x: m.x, y: m.y,
+                        type: m.type,
+
+                        reward: m.reward,
+                        active: true
+                    });
+                });
+            },
+            
+            toggleVehicle() {
+                if (this.player.inVehicle) {
+                    // Exit vehicle
+                    this.player.inVehicle = false;
+                    this.entities.vehicles.push(this.player.vehicle);
+                    this.player.vehicle = null;
+                    this.playSound('exit');
+                } else {
+                    // Try to enter nearby vehicle
+                    const nearbyVehicle = this.entities.vehicles.find(v => {
+                        const dx = v.x - this.player.x;
+                        const dy = v.y - this.player.y;
+                        return Math.sqrt(dx * dx + dy * dy) < 40;
+                    });
+                    
+                    if (nearbyVehicle) {
+                        this.player.inVehicle = true;
+                        this.player.vehicle = nearbyVehicle;
+                        this.player.x = nearbyVehicle.x;
+                        this.player.y = nearbyVehicle.y;
+                        this.entities.vehicles = this.entities.vehicles.filter(v => v !== nearbyVehicle);
+                        this.playSound('enter');
+                    }
+                }
+
+                this.updateUI();
+            },
+            
+            checkMissionStart() {
+                if (this.mission.active) return;
+                
+                const nearbyMarker = this.entities.missionMarkers.find(m => {
+                    const dx = m.x - this.player.x;
+                    const dy = m.y - this.player.y;
+                    return m.active && Math.sqrt(dx * dx + dy * dy) < 50;
+                });
+                
+                if (nearbyMarker) {
+                    this.startMission(nearbyMarker);
+                }
+            },
+            
+            startMission(marker) {
+                marker.active = false;
+                this.mission.active = true;
+                this.mission.type = marker.type;
+                this.mission.reward = marker.reward;
+                
+                if (marker.type === 'delivery') {
+                    this.mission.target = {
+                        x: Math.random() * CONFIG.world.width,
+                        y: Math.random() * CONFIG.world.height
+                    };
+                    this.mission.timeLimit = 60;
+                } else if (marker.type === 'collect') {
+                    this.mission.target = {
+
+                        x: Math.random() * CONFIG.world.width,
+                        y: Math.random() * CONFIG.world.height
+                    };
+                    this.mission.timeLimit = 45;
+                } else if (marker.type === 'race') {
+                    this.mission.target = {
+                        x: Math.random() * CONFIG.world.width,
+                        y: Math.random() * CONFIG.world.height
+                    };
+                    this.mission.timeLimit = 40;
+                }
+                
+                this.updateMissionUI();
+                this.playSound('mission');
+            },
+            
+            updateMission() {
+                if (!this.mission.active) return;
+                
+                this.mission.timeLimit -= 1/60;
+                
+                if (this.mission.timeLimit <= 0) {
+                    this.mission.active = false;
+                    document.getElementById('mission').classList.add('hidden');
+                    this.playSound('fail');
+                    return;
+                }
+                
+                const dx = this.mission.target.x - this.player.x;
+                const dy = this.mission.target.y - this.player.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                
+                if (dist < 30) {
+                    this.completeMission();
+                }
+                
+                this.updateMissionUI();
+            },
+            
+            completeMission() {
+                this.player.money += this.mission.reward;
+                document.getElementById('rewardMessage').textContent = `+$${this.mission.reward}`;
+                this.mission.active = false;
+                document.getElementById('mission').classList.add('hidden');
+                document.getElementById('missionCompleteScreen').classList.remove('hidden');
+                this.paused = true;
+                this.playSound('success');
+            },
+            
+            updateMissionUI() {
+                const el = document.getElementById('mission');
+                if (this.mission.active) {
+                    el.classList.remove('hidden');
+                    
+                    let title = '';
+                    let desc = '';
+                    
+                    if (this.mission.type === 'delivery') {
+                        title = 'DELIVERY';
+                        desc = 'Deliver package to destination';
+                    } else if (this.mission.type === 'collect') {
+
+                        title = 'COLLECT';
+                        desc = 'Collect money from location';
+                    } else if (this.mission.type === 'race') {
+                        title = 'RACE';
+                        desc = 'Reach checkpoint in time';
+                    }
+                    
+                    document.getElementById('missionTitle').textContent = title;
+                    document.getElementById('missionDesc').textContent = desc;
+                    document.getElementById('missionProgress').textContent = 
+                        `Time: ${Math.ceil(this.mission.timeLimit)}s | Reward: $${this.mission.reward}`;
+                }
+            },
+            
+            updatePlayer() {
+                const speed = this.player.inVehicle ? CONFIG.player.carSpeed : CONFIG.player.speed;
+                
+                // Movement input
+                let moveX = 0, moveY = 0;
+                
+                if (this.keys['w'] || this.keys['arrowup']) moveY = -1;
+                if (this.keys['s'] || this.keys['arrowdown']) moveY = 1;
+                if (this.keys['a'] || this.keys['arrowleft']) moveX = -1;
+                if (this.keys['d'] || this.keys['arrowright']) moveX = 1;
+                
+                // Normalize diagonal movement
+                if (moveX !== 0 && moveY !== 0) {
+
+                    const mag = Math.sqrt(2);
+                    moveX /= mag;
+                    moveY /= mag;
+                }
+                
+                // Apply movement
+                this.player.vx = moveX * speed;
+                this.player.vy = moveY * speed;
+                
+                // Update angle based on movement
+                if (moveX !== 0 || moveY !== 0) {
+                    this.player.angle = Math.atan2(moveY, moveX);
+                }
+                
+                // Save old position for collision
+                const oldX = this.player.x;
+                const oldY = this.player.y;
+                
+                this.player.x += this.player.vx;
+                this.player.y += this.player.vy;
+                
+                // Keep in bounds
+                this.player.x = Math.max(20, Math.min(CONFIG.world.width - 20, this.player.x));
+                this.player.y = Math.max(20, Math.min(CONFIG.world.height - 20, this.player.y));
+                
+                // Check collision with buildings
+                const size = this.player.inVehicle ? 30 : 16;
+                for (const building of this.entities.buildings) {
+                    if (this.checkCollision(
+                        this.player.x - size/2, this.player.y - size/2, size, size,
+
+                        building.x, building.y, building.width, building.height
+                    )) {
+                        this.player.x = oldX;
+                        this.player.y = oldY;
+                        break;
+                    }
+                }
+                
+                // Sync vehicle position if in vehicle
+                if (this.player.inVehicle && this.player.vehicle) {
+                    this.player.vehicle.x = this.player.x;
+                    this.player.vehicle.y = this.player.y;
+                    this.player.vehicle.angle = this.player.angle;
+                }
+                
+                // Update camera to follow player
+                this.camera.x = this.player.x - CONFIG.canvas.width / 2;
+                this.camera.y = this.player.y - CONFIG.canvas.height / 2;
+                
+                // Keep camera in bounds
+                this.camera.x = Math.max(0, Math.min(CONFIG.world.width - CONFIG.canvas.width, this.camera.x));
+                this.camera.y = Math.max(0, Math.min(CONFIG.world.height - CONFIG.canvas.height, this.camera.y));
+            },
+            
+            updateNPCs() {
+                // Update NPC vehicles
+                this.entities.vehicles.forEach(car => {
+                    car.x += car.vx;
+
+                    car.y += car.vy;
+                    
+                    // Bounce off edges
+                    if (car.x < 0 || car.x > CONFIG.world.width) {
+                        car.vx *= -1;
+                        car.x = Math.max(0, Math.min(CONFIG.world.width, car.x));
+                    }
+                    if (car.y < 0 || car.y > CONFIG.world.height) {
+                        car.vy *= -1;
+                        car.y = Math.max(0, Math.min(CONFIG.world.height, car.y));
+                    }
+                    
+                    // Update angle
+                    car.angle = Math.atan2(car.vy, car.vx);
+                    
+                    // Random direction change
+                    if (Math.random() < 0.02) {
+                        car.vx = (Math.random() - 0.5) * 2;
+                        car.vy = (Math.random() - 0.5) * 2;
+                    }
+                });
+                
+                // Update pedestrians
+                this.entities.pedestrians.forEach(ped => {
+                    ped.x += ped.vx;
+                    ped.y += ped.vy;
+                    
+                    // Bounce off edges
+                    if (ped.x < 0 || ped.x > CONFIG.world.width) {
+
+                        ped.vx *= -1;
+                        ped.x = Math.max(0, Math.min(CONFIG.world.width, ped.x));
+                    }
+                    if (ped.y < 0 || ped.y > CONFIG.world.height) {
+                        ped.vy *= -1;
+                        ped.y = Math.max(0, Math.min(CONFIG.world.height, ped.y));
+                    }
+                    
+                    // Random direction change
+                    if (Math.random() < 0.05) {
+                        ped.vx = (Math.random() - 0.5) * 0.5;
+                        ped.vy = (Math.random() - 0.5) * 0.5;
+                    }
+                });
+            },
+            
+            updateWantedLevel() {
+                // Decrease wanted level over time
+                if (this.player.wantedLevel > 0) {
+                    this.player.wantedLevel = Math.max(0, this.player.wantedLevel - 0.001);
+                }
+                
+                // Spawn police if wanted
+                if (this.player.wantedLevel > 20 && Math.random() < 0.01) {
+                    this.spawnPolice();
+                }
+                
+                // Update police AI
+                this.entities.police.forEach(cop => {
+
+                    // Chase player
+                    const dx = this.player.x - cop.x;
+                    const dy = this.player.y - cop.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist > 0) {
+                        cop.vx = (dx / dist) * CONFIG.police.speed;
+                        cop.vy = (dy / dist) * CONFIG.police.speed;
+                        cop.angle = Math.atan2(dy, dx);
+                    }
+                    
+                    cop.x += cop.vx;
+                    cop.y += cop.vy;
+                    
+                    // Catch player
+                    if (dist < 20) {
+                        this.gameOver('BUSTED! You were arrested!');
+                    }
+                });
+            },
+            
+            spawnPolice() {
+                // Spawn police car near player but off-screen
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 400;
+                
+                this.entities.police.push({
+                    x: this.player.x + Math.cos(angle) * dist,
+                    y: this.player.y + Math.sin(angle) * dist,
+                    vx: 0, vy: 0,
+
+                    angle: 0,
+                    color: '#0044ff'
+                });
+            },
+            
+            increaseWantedLevel(amount) {
+                this.player.wantedLevel = Math.min(100, this.player.wantedLevel + amount);
+                this.playSound('wanted');
+            },
+            
+            checkCollision(x1, y1, w1, h1, x2, y2, w2, h2) {
+                return x1 < x2 + w2 && x1 + w1 > x2 && y1 < y2 + h2 && y1 + h1 > y2;
+            },
+            
+            updateUI() {
+                document.getElementById('healthBar').style.width = this.player.health + '%';
+                document.getElementById('money').textContent = '$' + this.player.money;
+                document.getElementById('wantedBar').style.width = this.player.wantedLevel + '%';
+                document.getElementById('vehicle').textContent = this.player.inVehicle ? 'In Vehicle' : 'On Foot';
+            },
+            
+            render() {
+                this.ctx.clearRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+                
+                // Draw world background (grass)
+                this.ctx.fillStyle = '#2d5016';
+                this.ctx.fillRect(0, 0, CONFIG.canvas.width, CONFIG.canvas.height);
+
+                
+                // Draw roads
+                this.ctx.fillStyle = '#555';
+                this.entities.roads.forEach(road => {
+                    this.ctx.fillRect(
+                        road.x - this.camera.x,
+                        road.y - this.camera.y,
+                        road.width,
+                        road.height
+                    );
+                    
+                    // Draw road markings
+                    this.ctx.strokeStyle = '#ffff00';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.setLineDash([20, 20]);
+                    
+                    if (road.direction === 'vertical') {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(road.x + road.width/2 - this.camera.x, 0);
+                        this.ctx.lineTo(road.x + road.width/2 - this.camera.x, CONFIG.canvas.height);
+                        this.ctx.stroke();
+                    } else {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(0, road.y + road.height/2 - this.camera.y);
+                        this.ctx.lineTo(CONFIG.canvas.width, road.y + road.height/2 - this.camera.y);
+                        this.ctx.stroke();
+                    }
+                    this.ctx.setLineDash([]);
+                });
+
+                
+                // Draw buildings
+                this.entities.buildings.forEach(building => {
+                    this.ctx.fillStyle = building.color;
+                    this.ctx.fillRect(
+                        building.x - this.camera.x,
+                        building.y - this.camera.y,
+                        building.width,
+                        building.height
+                    );
+                    
+                    // Building windows
+                    this.ctx.fillStyle = '#ffff88';
+                    for (let wx = 0; wx < building.width; wx += 15) {
+                        for (let wy = 0; wy < building.height; wy += 15) {
+                            if (Math.random() > 0.3) {
+                                this.ctx.fillRect(
+                                    building.x + wx + 3 - this.camera.x,
+                                    building.y + wy + 3 - this.camera.y,
+                                    8, 8
+                                );
+                            }
+                        }
+                    }
+                    
+                    // Building outline
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeRect(
+                        building.x - this.camera.x,
+
+                        building.y - this.camera.y,
+                        building.width,
+                        building.height
+                    );
+                });
+                
+                // Draw mission markers
+                this.entities.missionMarkers.forEach(marker => {
+                    if (!marker.active) return;
+                    
+                    const x = marker.x - this.camera.x;
+                    const y = marker.y - this.camera.y;
+                    
+                    // Pulsing effect
+                    const pulse = Math.sin(Date.now() / 200) * 5;
+                    
+                    this.ctx.fillStyle = '#ffaa00';
+                    this.ctx.strokeStyle = '#ff6600';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 20 + pulse, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                    
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.font = 'bold 16px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText('M', x, y);
+                });
+
+                
+                // Draw mission target
+                if (this.mission.active && this.mission.target) {
+                    const x = this.mission.target.x - this.camera.x;
+                    const y = this.mission.target.y - this.camera.y;
+                    
+                    const pulse = Math.sin(Date.now() / 150) * 8;
+                    
+                    this.ctx.fillStyle = '#00ff88';
+                    this.ctx.strokeStyle = '#00cc66';
+                    this.ctx.lineWidth = 3;
+                    this.ctx.beginPath();
+                    this.ctx.arc(x, y, 25 + pulse, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.stroke();
+                    
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.font = 'bold 20px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.fillText('!', x, y);
+                }
+                
+                // Draw pedestrians
+                this.entities.pedestrians.forEach(ped => {
+                    this.ctx.fillStyle = ped.color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(
+                        ped.x - this.camera.x,
+                        ped.y - this.camera.y,
+
+                        6, 0, Math.PI * 2
+                    );
+                    this.ctx.fill();
+                    
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.stroke();
+                });
+                
+                // Draw NPC vehicles
+                this.entities.vehicles.forEach(car => {
+                    this.drawVehicle(
+                        car.x - this.camera.x,
+                        car.y - this.camera.y,
+                        car.angle,
+                        car.color
+                    );
+                });
+                
+                // Draw police
+                this.entities.police.forEach(cop => {
+                    this.drawVehicle(
+                        cop.x - this.camera.x,
+                        cop.y - this.camera.y,
+                        cop.angle,
+                        cop.color,
+                        true
+                    );
+                });
+                
+                // Draw player
+                if (this.player.inVehicle && this.player.vehicle) {
+                    this.drawVehicle(
+                        this.player.x - this.camera.x,
+
+                        this.player.y - this.camera.y,
+                        this.player.angle,
+                        this.player.vehicle.color
+                    );
+                } else {
+                    this.drawPlayer(
+                        this.player.x - this.camera.x,
+                        this.player.y - this.camera.y,
+                        this.player.angle
+                    );
+                }
+                
+                // Draw minimap
+                this.drawMinimap();
+            },
+            
+            drawPlayer(x, y, angle) {
+                this.ctx.save();
+                this.ctx.translate(x, y);
+                this.ctx.rotate(angle);
+                
+                // Body
+                this.ctx.fillStyle = '#ff3366';
+                this.ctx.fillRect(-8, -8, 16, 16);
+                
+                // Head
+                this.ctx.fillStyle = '#ffcc99';
+                this.ctx.beginPath();
+                this.ctx.arc(0, -10, 5, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Direction indicator
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(6, -2, 4, 4);
+
+                
+                // Outline
+                this.ctx.strokeStyle = '#000';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(-8, -8, 16, 16);
+                
+                this.ctx.restore();
+            },
+            
+            drawVehicle(x, y, angle, color, isPolice = false) {
+                this.ctx.save();
+                this.ctx.translate(x, y);
+                this.ctx.rotate(angle);
+                
+                // Car body
+                this.ctx.fillStyle = color;
+                this.ctx.fillRect(-15, -10, 30, 20);
+                
+                // Windows
+                this.ctx.fillStyle = '#333';
+                this.ctx.fillRect(-10, -7, 8, 14);
+                this.ctx.fillRect(2, -7, 8, 14);
+                
+                // Police lights
+                if (isPolice) {
+                    const lightOn = Math.floor(Date.now() / 200) % 2 === 0;
+                    this.ctx.fillStyle = lightOn ? '#ff0000' : '#0000ff';
+                    this.ctx.fillRect(-5, -12, 4, 2);
+                    this.ctx.fillStyle = lightOn ? '#0000ff' : '#ff0000';
+                    this.ctx.fillRect(1, -12, 4, 2);
+                }
+
+                
+                // Outline
+                this.ctx.strokeStyle = '#000';
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeRect(-15, -10, 30, 20);
+                
+                this.ctx.restore();
+            },
+            
+            drawMinimap() {
+                const minimapCanvas = document.getElementById('minimap');
+                const minimapCtx = minimapCanvas.getContext('2d');
+                const scale = 0.06;
+                const minimapWidth = 150;
+                const minimapHeight = 150;
+                
+                minimapCanvas.width = minimapWidth;
+                minimapCanvas.height = minimapHeight;
+                
+                // Background
+                minimapCtx.fillStyle = '#1a1a1a';
+                minimapCtx.fillRect(0, 0, minimapWidth, minimapHeight);
+                
+                // Roads (simplified)
+                minimapCtx.fillStyle = '#444';
+                this.entities.roads.forEach(road => {
+                    minimapCtx.fillRect(
+                        road.x * scale,
+                        road.y * scale,
+                        road.width * scale,
+                        road.height * scale
+                    );
+                });
+
+                
+                // Mission markers
+                minimapCtx.fillStyle = '#ffaa00';
+                this.entities.missionMarkers.forEach(marker => {
+                    if (marker.active) {
+                        minimapCtx.fillRect(
+                            marker.x * scale - 2,
+                            marker.y * scale - 2,
+                            4, 4
+                        );
+                    }
+                });
+                
+                // Mission target
+                if (this.mission.active && this.mission.target) {
+                    minimapCtx.fillStyle = '#00ff88';
+                    minimapCtx.fillRect(
+                        this.mission.target.x * scale - 3,
+                        this.mission.target.y * scale - 3,
+                        6, 6
+                    );
+                }
+                
+                // Police
+                minimapCtx.fillStyle = '#0044ff';
+                this.entities.police.forEach(cop => {
+                    minimapCtx.fillRect(
+                        cop.x * scale - 2,
+                        cop.y * scale - 2,
+                        4, 4
+                    );
+                });
+
+                
+                // Player
+                minimapCtx.fillStyle = '#ff3366';
+                minimapCtx.fillRect(
+                    this.player.x * scale - 3,
+                    this.player.y * scale - 3,
+                    6, 6
+                );
+                
+                // Border
+                minimapCtx.strokeStyle = '#00ff88';
+                minimapCtx.lineWidth = 3;
+                minimapCtx.strokeRect(0, 0, minimapWidth, minimapHeight);
+            },
+            
+            playSound(type) {
+                // Simple beep sounds using Web Audio API
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                gainNode.gain.value = 0.1;
+                
+                switch(type) {
+                    case 'enter':
+                        oscillator.frequency.value = 400;
+                        oscillator.type = 'square';
+                        break;
+                    case 'exit':
+                        oscillator.frequency.value = 300;
+
+                        oscillator.type = 'square';
+                        break;
+                    case 'wanted':
+                        oscillator.frequency.value = 800;
+                        oscillator.type = 'sawtooth';
+                        break;
+                    case 'mission':
+                        oscillator.frequency.value = 600;
+                        oscillator.type = 'sine';
+                        break;
+                    case 'success':
+                        oscillator.frequency.value = 500;
+                        oscillator.type = 'sine';
+                        break;
+                    case 'fail':
+                        oscillator.frequency.value = 150;
+                        oscillator.type = 'sawtooth';
+                        break;
+                    case 'gameover':
+                        oscillator.frequency.value = 100;
+                        oscillator.type = 'sawtooth';
+                        break;
+                }
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.2);
+            },
+            
+            gameLoop() {
+                if (!this.running) return;
+                
+                if (!this.paused) {
+
+                    this.updatePlayer();
+                    this.updateNPCs();
+                    this.updateWantedLevel();
+                    this.updateMission();
+                    this.updateUI();
+                }
+                
+                this.render();
+                requestAnimationFrame(() => this.gameLoop());
+            }
+        };
+        
+        // Auto-increase wanted level for testing (hit NPC cars)
+        setInterval(() => {
+            if (game.running && !game.paused && game.player.inVehicle) {
+                game.entities.vehicles.forEach(car => {
+                    const dx = car.x - game.player.x;
+                    const dy = car.y - game.player.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < 25) {
+                        game.increaseWantedLevel(15);
+                    }
+                });
+                
+                game.entities.pedestrians.forEach(ped => {
+                    const dx = ped.x - game.player.x;
+                    const dy = ped.y - game.player.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < 20) {
+
+                        game.increaseWantedLevel(25);
+                        game.player.health -= 5;
+                        if (game.player.health <= 0) {
+                            game.gameOver('WASTED! You died!');
+                        }
+                    }
+                });
+            }
+        }, 100);
+    </script>
+</body>
+</html>
