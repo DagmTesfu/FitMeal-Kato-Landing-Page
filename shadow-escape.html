@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow Escape - HTML5 Canvas Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            background: #0a0a0a;
+        }
+
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            color: #00ffff;
+            font-size: 18px;
+            text-shadow: 0 0 10px #00ffff;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #ui div {
+            margin-bottom: 5px;
+        }
+
+        .menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #00ffff;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+        }
+
+        .menu h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #00ffff;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 20px #00ffff, 0 0 30px #00ffff; }
+            50% { text-shadow: 0 0 30px #00ffff, 0 0 50px #00ffff; }
+        }
+
+        .menu p {
+            font-size: 16px;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .menu button {
+            background: linear-gradient(135deg, #00ffff 0%, #0099ff 100%);
+            border: none;
+            color: #000;
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 10px;
+            margin: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .menu button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
+        }
+
+        .menu button:active {
+            transform: scale(0.95);
+        }
+
+        #pauseBtn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 255, 255, 0.2);
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            z-index: 15;
+            transition: all 0.3s;
+        }
+
+        #pauseBtn:hover {
+            background: rgba(0, 255, 255, 0.4);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #controls {
+            font-size: 14px;
+            color: #00ffff;
+            opacity: 0.7;
+        }
+
+        /* Mobile touch controls */
+        #touchControls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: none;
+            justify-content: space-around;
+            z-index: 15;
+            pointer-events: all;
+        }
+
+        .touchBtn {
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 255, 255, 0.2);
+            border: 2px solid #00ffff;
+            border-radius: 50%;
+            color: #00ffff;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .touchBtn:active {
+            background: rgba(0, 255, 255, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            #touchControls {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- UI Overlay -->
+        <div id="ui">
+            <div id="score">Score: 0</div>
+            <div id="health">Health: 100</div>
+            <div id="timer">Time: 0s</div>
+            <div id="level">Level: 1</div>
+        </div>
+
+        <!-- Pause Button -->
+        <button id="pauseBtn" class="hidden">PAUSE</button>
+
+        <!-- Start Menu -->
+        <div id="startMenu" class="menu">
+            <h1>SHADOW ESCAPE</h1>
+            <p>
+                You are a glowing entity trapped in darkness.<br>
+                Escape from the shadows and collect energy orbs!<br><br>
+                <strong>Controls:</strong><br>
+                WASD or Arrow Keys to move<br><br>
+                <strong>Power-ups:</strong><br>
+                🔵 Speed Boost | 🟢 Shield | 🟡 Slow Motion
+            </p>
+            <button id="startBtn">START GAME</button>
+            <div id="controls">Difficulty increases every 20 seconds!</div>
+        </div>
+
+        <!-- Pause Menu -->
+        <div id="pauseMenu" class="menu hidden">
+            <h1>PAUSED</h1>
+            <button id="resumeBtn">RESUME</button>
+            <button id="restartFromPauseBtn">RESTART</button>
+        </div>
+
+        <!-- Game Over Menu -->
+        <div id="gameOverMenu" class="menu hidden">
+            <h1>GAME OVER</h1>
+            <p id="finalScore"></p>
+            <p id="finalTime"></p>
+            <button id="restartBtn">PLAY AGAIN</button>
+        </div>
+
+        <!-- Mobile Touch Controls -->
+        <div id="touchControls">
+            <div class="touchBtn" data-key="ArrowLeft">←</div>
+            <div class="touchBtn" data-key="ArrowUp">↑</div>
+            <div class="touchBtn" data-key="ArrowDown">↓</div>
+            <div class="touchBtn" data-key="ArrowRight">→</div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // GAME CONFIGURATION
+        // ========================================
+        const CONFIG = {
+            canvas: {
+                width: 800,
+                height: 600
+            },
+            player: {
+                size: 15,
+                speed: 4,
+                maxHealth: 100,
+                color: '#00ffff',
+                glowColor: 'rgba(0, 255, 255, 0.5)'
+            },
+            enemy: {
+                initialCount: 3,
+                size: 12,
+                speed: 1.5,
+                color: '#ff0066',
+                spawnInterval: 15000, // milliseconds
+                damage: 10
+            },
+            orb: {
+                size: 8,
+                count: 5,
+                points: 10,
+                color: '#ffff00',
+                spawnDelay: 3000
+            },
+            powerup: {
+                size: 12,
+                duration: 5000, // milliseconds
+                spawnChance: 0.15, // 15% chance when orb collected
+                types: {
+                    speed: { color: '#0099ff', multiplier: 1.8 },
+                    shield: { color: '#00ff00', duration: 8000 },
+                    slowmo: { color: '#ffaa00', multiplier: 0.4 }
+                }
+            },
+            difficulty: {
+                increaseInterval: 20000, // every 20 seconds
+                enemySpeedIncrease: 0.3,
+                enemyCountIncrease: 1
+            }
+        };
+
+        // ========================================
+        // GAME STATE
+        // ========================================
+        const gameState = {
+            running: false,
+            paused: false,
+            score: 0,
+            health: CONFIG.player.maxHealth,
+            time: 0,
+            level: 1,
+            lastDifficultyIncrease: 0,
+            lastEnemySpawn: 0,
+            activePowerups: new Set(),
+            keys: {}
+        };
+
+        // ========================================
+        // CANVAS SETUP
+        // ========================================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = CONFIG.canvas.width;
+        canvas.height = CONFIG.canvas.height;
+
+        // ========================================
+        // GAME ENTITIES
+        // ========================================
+        
+        // Player object - the glowing character controlled by the user
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            vx: 0,
+            vy: 0,
+            size: CONFIG.player.size,
+            speed: CONFIG.player.speed,
+            hasShield: false,
+            
+            // Update player position based on velocity
+            update() {
+                // Apply speed boost if active
+                const speedMultiplier = gameState.activePowerups.has('speed') ? 
+                    CONFIG.powerup.types.speed.multiplier : 1;
+                
+                this.x += this.vx * speedMultiplier;
+                this.y += this.vy * speedMultiplier;
+                
+                // Keep player within canvas bounds
+                this.x = Math.max(this.size, Math.min(canvas.width - this.size, this.x));
+                this.y = Math.max(this.size, Math.min(canvas.height - this.size, this.y));
+            },
+            
+            // Draw the player with glow effect
+            draw() {
+                // Outer glow
+                ctx.shadowBlur = 30;
+                ctx.shadowColor = CONFIG.player.glowColor;
+                
+                // Shield effect
+                if (this.hasShield) {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size + 10, 0, Math.PI * 2);
+                    ctx.strokeStyle = CONFIG.powerup.types.shield.color;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+                
+                // Player body
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = CONFIG.player.color;
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+            },
+            
+            // Reset player to center
+            reset() {
+                this.x = canvas.width / 2;
+                this.y = canvas.height / 2;
+                this.vx = 0;
+                this.vy = 0;
+                this.hasShield = false;
+            }
+        };
+
+        // Enemy array - shadows that chase the player
+        const enemies = [];
+
+        // Enemy class with chasing AI
+        class Enemy {
+            constructor(x, y) {
+                this.x = x || Math.random() * canvas.width;
+                this.y = y || Math.random() * canvas.height;
+                this.size = CONFIG.enemy.size;
+                this.speed = CONFIG.enemy.speed + (gameState.level - 1) * CONFIG.difficulty.enemySpeedIncrease;
+                this.color = CONFIG.enemy.color;
+            }
+            
+            // Update enemy position - chase the player
+            update() {
+                // Calculate direction to player
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Normalize and apply speed
+                if (distance > 0) {
+                    // Apply slow motion if active
+                    const slowMultiplier = gameState.activePowerups.has('slowmo') ? 
+                        CONFIG.powerup.types.slowmo.multiplier : 1;
+                    
+                    this.x += (dx / distance) * this.speed * slowMultiplier;
+                    this.y += (dy / distance) * this.speed * slowMultiplier;
+                }
+            }
+            
+            // Draw enemy with shadow effect
+            draw() {
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.color;
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                // Add pulsing effect
+                const pulseSize = Math.sin(Date.now() / 200) * 2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size + pulseSize, 0, Math.PI * 2);
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.3;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+                
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // Orb array - collectibles that increase score
+        const orbs = [];
+
+        // Orb class - energy orbs to collect
+        class Orb {
+            constructor() {
+                this.x = Math.random() * (canvas.width - 40) + 20;
+                this.y = Math.random() * (canvas.height - 40) + 20;
+                this.size = CONFIG.orb.size;
+                this.color = CONFIG.orb.color;
+                this.pulse = 0;
+            }
+            
+            // Draw orb with pulsing animation
+            draw() {
+                this.pulse += 0.1;
+                const pulseSize = Math.sin(this.pulse) * 3;
+                
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size + pulseSize, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // Power-up array - special abilities
+        const powerups = [];
+
+        // Power-up class - temporary boosts
+        class Powerup {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.size = CONFIG.powerup.size;
+                this.type = type;
+                this.color = CONFIG.powerup.types[type].color;
+                this.rotation = 0;
+            }
+            
+            // Draw power-up with rotating effect
+            draw() {
+                this.rotation += 0.05;
+                
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.color;
+                
+                // Draw diamond shape
+                ctx.beginPath();
+                ctx.moveTo(0, -this.size);
+                ctx.lineTo(this.size, 0);
+                ctx.lineTo(0, this.size);
+                ctx.lineTo(-this.size, 0);
+                ctx.closePath();
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+        }
+
+        // ========================================
+        // COLLISION DETECTION
+        // ========================================
+        
+        // Check collision between two circular objects
+        function checkCollision(obj1, obj2, radius1, radius2) {
+            const dx = obj1.x - obj2.x;
+            const dy = obj1.y - obj2.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            return distance < radius1 + radius2;
+        }
+
+        // ========================================
+        // GAME INITIALIZATION
+        // ========================================
+        
+        // Initialize game entities
+        function initGame() {
+            // Reset game state
+            gameState.score = 0;
+            gameState.health = CONFIG.player.maxHealth;
+            gameState.time = 0;
+            gameState.level = 1;
+            gameState.lastDifficultyIncrease = 0;
+            gameState.lastEnemySpawn = 0;
+            gameState.activePowerups.clear();
+            
+            // Clear arrays
+            enemies.length = 0;
+            orbs.length = 0;
+            powerups.length = 0;
+            
+            // Reset player
+            player.reset();
+            
+            // Spawn initial enemies
+            for (let i = 0; i < CONFIG.enemy.initialCount; i++) {
+                spawnEnemy();
+            }
+            
+            // Spawn initial orbs
+            for (let i = 0; i < CONFIG.orb.count; i++) {
+                orbs.push(new Orb());
+            }
+            
+            updateUI();
+        }
+
+        // Spawn a new enemy at a random edge
+        function spawnEnemy() {
+            const edge = Math.floor(Math.random() * 4);
+            let x, y;
+            
+            switch(edge) {
+                case 0: // Top
+                    x = Math.random() * canvas.width;
+                    y = -20;
+                    break;
+                case 1: // Right
+                    x = canvas.width + 20;
+                    y = Math.random() * canvas.height;
+                    break;
+                case 2: // Bottom
+                    x = Math.random() * canvas.width;
+                    y = canvas.height + 20;
+                    break;
+                case 3: // Left
+                    x = -20;
+                    y = Math.random() * canvas.height;
+                    break;
+            }
+            
+            enemies.push(new Enemy(x, y));
+        }
+
+        // ========================================
+        // INPUT HANDLING
+        // ========================================
+        
+        // Keyboard input
+        document.addEventListener('keydown', (e) => {
+            gameState.keys[e.key] = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            gameState.keys[e.key] = false;
+        });
+
+        // Handle player movement based on input
+        function handleInput() {
+            player.vx = 0;
+            player.vy = 0;
+            
+            // WASD and Arrow keys
+            if (gameState.keys['w'] || gameState.keys['W'] || gameState.keys['ArrowUp']) {
+                player.vy = -player.speed;
+            }
+            if (gameState.keys['s'] || gameState.keys['S'] || gameState.keys['ArrowDown']) {
+                player.vy = player.speed;
+            }
+            if (gameState.keys['a'] || gameState.keys['A'] || gameState.keys['ArrowLeft']) {
+                player.vx = -player.speed;
+            }
+            if (gameState.keys['d'] || gameState.keys['D'] || gameState.keys['ArrowRight']) {
+                player.vx = player.speed;
+            }
+            
+            // Normalize diagonal movement
+            if (player.vx !== 0 && player.vy !== 0) {
+                player.vx *= 0.707; // 1/sqrt(2)
+                player.vy *= 0.707;
+            }
+        }
+
+        // Touch controls for mobile
+        document.querySelectorAll('.touchBtn').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const key = btn.dataset.key;
+                gameState.keys[key] = true;
+            });
+            
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const key = btn.dataset.key;
+                gameState.keys[key] = false;
+            });
+        });
+
+        // ========================================
+        // GAME LOOP
+        // ========================================
+        
+        let lastTime = 0;
+        let deltaTime = 0;
+
+        function gameLoop(currentTime) {
+            if (!gameState.running) return;
+            
+            // Calculate delta time for smooth animation
+            deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+            
+            if (!gameState.paused) {
+                update(deltaTime);
+                render();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Update game state
+        function update(dt) {
+            // Update timer
+            gameState.time += dt;
+            
+            // Handle input and update player
+            handleInput();
+            player.update();
+            
+            // Update enemies
+            enemies.forEach(enemy => enemy.update());
+            
+            // Check collisions with orbs
+            for (let i = orbs.length - 1; i >= 0; i--) {
+                if (checkCollision(player, orbs[i], player.size, orbs[i].size)) {
+                    // Collect orb
+                    gameState.score += CONFIG.orb.points;
+                    orbs.splice(i, 1);
+                    
+                    // Spawn new orb after delay
+                    setTimeout(() => {
+                        if (gameState.running) {
+                            orbs.push(new Orb());
+                        }
+                    }, CONFIG.orb.spawnDelay);
+                    
+                    // Chance to spawn power-up
+                    if (Math.random() < CONFIG.powerup.spawnChance) {
+                        const types = Object.keys(CONFIG.powerup.types);
+                        const randomType = types[Math.floor(Math.random() * types.length)];
+                        powerups.push(new Powerup(
+                            Math.random() * (canvas.width - 40) + 20,
+                            Math.random() * (canvas.height - 40) + 20,
+                            randomType
+                        ));
+                    }
+                }
+            }
+            
+            // Check collisions with power-ups
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                if (checkCollision(player, powerups[i], player.size, powerups[i].size)) {
+                    const powerup = powerups[i];
+                    activatePowerup(powerup.type);
+                    powerups.splice(i, 1);
+                }
+            }
+            
+            // Check collisions with enemies
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                if (checkCollision(player, enemies[i], player.size, enemies[i].size)) {
+                    if (!player.hasShield) {
+                        gameState.health -= CONFIG.enemy.damage;
+                        // Small knockback effect
+                        const dx = player.x - enemies[i].x;
+                        const dy = player.y - enemies[i].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        if (distance > 0) {
+                            player.x += (dx / distance) * 20;
+                            player.y += (dy / distance) * 20;
+                        }
+                    }
+                    // Remove enemy on hit
+                    enemies.splice(i, 1);
+                    
+                    // Check game over
+                    if (gameState.health <= 0) {
+                        gameOver();
+                        return;
+                    }
+                }
+            }
+            
+            // Increase difficulty over time
+            if (gameState.time - gameState.lastDifficultyIncrease > CONFIG.difficulty.increaseInterval) {
+                gameState.level++;
+                gameState.lastDifficultyIncrease = gameState.time;
+                
+                // Add more enemies
+                for (let i = 0; i < CONFIG.difficulty.enemyCountIncrease; i++) {
+                    spawnEnemy();
+                }
+            }
+            
+            // Spawn new enemies periodically
+            if (gameState.time - gameState.lastEnemySpawn > CONFIG.enemy.spawnInterval) {
+                spawnEnemy();
+                gameState.lastEnemySpawn = gameState.time;
+            }
+            
+            updateUI();
+        }
+
+        // Activate a power-up
+        function activatePowerup(type) {
+            gameState.activePowerups.add(type);
+            
+            if (type === 'shield') {
+                player.hasShield = true;
+            }
+            
+            // Set duration
+            const duration = CONFIG.powerup.types[type].duration || CONFIG.powerup.duration;
+            
+            setTimeout(() => {
+                gameState.activePowerups.delete(type);
+                if (type === 'shield') {
+                    player.hasShield = false;
+                }
+            }, duration);
+        }
+
+        // Render game
+        function render() {
+            // Clear canvas with fade effect for trails
+            ctx.fillStyle = 'rgba(10, 10, 10, 0.3)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw entities
+            orbs.forEach(orb => orb.draw());
+            powerups.forEach(powerup => powerup.draw());
+            enemies.forEach(enemy => enemy.draw());
+            player.draw();
+        }
+
+        // Update UI display
+        function updateUI() {
+            document.getElementById('score').textContent = `Score: ${gameState.score}`;
+            document.getElementById('health').textContent = `Health: ${Math.max(0, gameState.health)}`;
+            document.getElementById('timer').textContent = `Time: ${Math.floor(gameState.time / 1000)}s`;
+            document.getElementById('level').textContent = `Level: ${gameState.level}`;
+        }
+
+        // ========================================
+        // GAME STATE MANAGEMENT
+        // ========================================
+        
+        function startGame() {
+            initGame();
+            gameState.running = true;
+            gameState.paused = false;
+            lastTime = performance.now();
+            
+            // Hide menus, show UI
+            document.getElementById('startMenu').classList.add('hidden');
+            document.getElementById('pauseMenu').classList.add('hidden');
+            document.getElementById('gameOverMenu').classList.add('hidden');
+            document.getElementById('pauseBtn').classList.remove('hidden');
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function pauseGame() {
+            gameState.paused = true;
+            document.getElementById('pauseMenu').classList.remove('hidden');
+        }
+
+        function resumeGame() {
+            gameState.paused = false;
+            document.getElementById('pauseMenu').classList.add('hidden');
+            lastTime = performance.now(); // Reset timer to avoid time jump
+        }
+
+        function gameOver() {
+            gameState.running = false;
+            
+            // Show game over screen
+            document.getElementById('finalScore').textContent = `Final Score: ${gameState.score}`;
+            document.getElementById('finalTime').textContent = `Survived: ${Math.floor(gameState.time / 1000)} seconds`;
+            document.getElementById('gameOverMenu').classList.remove('hidden');
+            document.getElementById('pauseBtn').classList.add('hidden');
+        }
+
+        // ========================================
+        // EVENT LISTENERS
+        // ========================================
+        
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('pauseBtn').addEventListener('click', pauseGame);
+        document.getElementById('resumeBtn').addEventListener('click', resumeGame);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+        document.getElementById('restartFromPauseBtn').addEventListener('click', startGame);
+
+        // Pause with ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && gameState.running && !gameState.paused) {
+                pauseGame();
+            }
+        });
+
+        // ========================================
+        // INITIALIZE
+        // ========================================
+        
+        // Show start menu on load
+        document.getElementById('startMenu').classList.remove('hidden');
+    </script>
+</body>
+</html>
